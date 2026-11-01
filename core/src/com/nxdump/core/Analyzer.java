@@ -25,6 +25,16 @@ public final class Analyzer {
         c.importTickets(keys);
         List<String> errs = new ArrayList<>();
         List<Nca> ncas = c.openNcas(keys, errs);
+        return analyze(c, keys, ncas, errs);
+    }
+
+    /** Analyze an already-open NCA list to avoid reparsing the same container twice. */
+    public static List<Info> analyze(Container c, Keys keys, List<Nca> ncas) {
+        c.importTickets(keys);
+        return analyze(c, keys, ncas, new ArrayList<>());
+    }
+
+    private static List<Info> analyze(Container c, Keys keys, List<Nca> ncas, List<String> errs) {
         List<Info> out = new ArrayList<>();
         for (Nca meta : ncas) {
             if (meta.contentType != Nca.TYPE_META) continue;
