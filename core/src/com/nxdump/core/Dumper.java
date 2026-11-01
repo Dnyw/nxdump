@@ -10,6 +10,9 @@ import java.util.List;
 public final class Dumper {
     private Dumper() {}
 
+    // A moderate increase reduces read/write calls without a large transient memory cost.
+    private static final int COPY_BUFFER_SIZE = 2 << 20;
+
     public interface Sink { OutputStream open(String relativePath) throws IOException; }
 
     public interface Progress {
@@ -92,9 +95,13 @@ public final class Dumper {
         if (jobs.isEmpty()) throw new NxException("Nothing to extract");
 
         long total = 0;
-        for (Job j : jobs) total += j.size;
+        for (Job j : jobs) {
+            if (j.size < 0 || total > Long.MAX_VALUE - j.size)
+                throw new NxException("Invalid or oversized extraction entry");
+            total += j.size;
+        }
         long done = 0;
-        byte[] buf = new byte[1 << 20];
+        byte[] buf = new byte[COPY_BUFFER_SIZE];
         for (Job j : jobs) {
             prog.update(j.path, done, total);
             try (OutputStream out = sink.open(j.path)) {
@@ -104,7 +111,8 @@ public final class Dumper {
                     int n = (int) Math.min(buf.length, j.size - p);
                     j.src.read(j.off + p, buf, 0, n);
                     out.write(buf, 0, n);
-                    p += n; done += n;
+                    p += n;
+                    done += n;
                     prog.update(j.path, done, total);
                 }
             }
