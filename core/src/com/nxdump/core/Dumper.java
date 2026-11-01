@@ -42,7 +42,7 @@ public final class Dumper {
     private static Nca resolveProgram(Container c, Keys keys, long appId, boolean patch) {
         List<Nca> ncas = c.openNcas(keys, null);
         int kind = patch ? Analyzer.UPDATE : Analyzer.BASE;
-        for (Analyzer.Info i : Analyzer.analyze(c, keys))
+        for (Analyzer.Info i : Analyzer.analyze(c, keys, ncas))
             if (i.kind == kind && i.appId == appId && i.programNca != null)
                 for (Nca n : ncas) if (n.name.equalsIgnoreCase(i.programNca)) return n;
         Nca n = findProgram(ncas, appId, patch);
