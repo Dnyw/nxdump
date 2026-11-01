@@ -26,3 +26,18 @@ jobs:
         run: python -m pip install --disable-pip-version-check cryptography
       - name: Run AES and extraction byte-exact tests
         run: sh core/test/run_tests.sh
+
+  android-debug-build:
+    needs: core-byte-exact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Compile Android debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
