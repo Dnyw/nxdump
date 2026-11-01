@@ -27,7 +27,9 @@ public interface Source {
         public Slice(Source parent, long off, long len) { this.parent = parent; this.off = off; this.len = len; }
         @Override public long size() { return len; }
         @Override public void read(long pos, byte[] b, int o, int n) throws IOException {
-            if (pos < 0 || n < 0 || pos + n > len) throw new EOFException("Read past end of region");
+            if (pos < 0 || n < 0 || pos > len || n > len - pos)
+                throw new EOFException("Read past end of region");
+            if (off > Long.MAX_VALUE - pos) throw new EOFException("Invalid source offset");
             parent.read(off + pos, b, o, n);
         }
     }
@@ -37,7 +39,10 @@ public interface Source {
         public Bytes(byte[] data) { this.data = data; }
         @Override public long size() { return data.length; }
         @Override public void read(long pos, byte[] b, int o, int n) throws IOException {
-            if (pos < 0 || n < 0 || pos + n > data.length) throw new EOFException("Read past end of buffer");
+            if (pos < 0 || n < 0 || pos > data.length || n > data.length - pos)
+                throw new EOFException("Read past end of buffer");
+            if (o < 0 || o > b.length || n > b.length - o)
+                throw new IndexOutOfBoundsException("Invalid destination range");
             System.arraycopy(data, (int) pos, b, o, n);
         }
     }
@@ -51,12 +56,19 @@ public interface Source {
         }
         @Override public long size() { return size; }
         @Override public void read(long pos, byte[] b, int o, int n) throws IOException {
-            if (pos < 0 || n < 0 || pos + n > size) throw new EOFException("Read past end of file");
+            if (pos < 0 || n < 0 || pos > size || n > size - pos)
+                throw new EOFException("Read past end of file");
+            if (o < 0 || o > b.length || n > b.length - o)
+                throw new IndexOutOfBoundsException("Invalid destination range");
             ByteBuffer bb = ByteBuffer.wrap(b, o, n);
             long p = pos;
             while (bb.hasRemaining()) {
                 int r = ch.read(bb, p);
                 if (r < 0) throw new EOFException("Unexpected end of file");
+                if (r == 0) {
+                    Thread.yield();
+                    continue;
+                }
                 p += r;
             }
         }
