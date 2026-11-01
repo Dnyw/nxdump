@@ -14,7 +14,7 @@ public final class AesReadTest {
         SecureRandom random = new SecureRandom();
         byte[] key = new byte[16];
         byte[] upper = new byte[16];
-        byte[] rawBytes = new byte[CHUNK + 4096];
+        byte[] rawBytes = new byte[CHUNK + 16384];
         random.nextBytes(key);
         random.nextBytes(upper);
         random.nextBytes(rawBytes);
